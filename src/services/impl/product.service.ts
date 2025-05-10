@@ -14,10 +14,14 @@ export class ProductService {
 		this.ns = ns;
 		this.db = db;
 	}
+	
+	private async save(p: Product): Promise<void> {
+		await this.db.update(products).set(p).where(eq(products.id, p.id));
+	}
 
 	public async notifyDelay(leadTime: number, p: Product): Promise<void> {
 		p.leadTime = leadTime;
-		await this.db.update(products).set(p).where(eq(products.id, p.id));
+		await this.save(p);
 		this.ns.sendDelayNotification(leadTime, p.name);
 	}
 
@@ -29,10 +33,10 @@ export class ProductService {
 		if (projectedRestockDate > p.seasonEndDate!) {
 			this.ns.sendOutOfStockNotification(p.name);
 			p.available = 0;
-			await this.db.update(products).set(p).where(eq(products.id, p.id));
+			await this.save(p);
 		} else if (p.seasonStartDate! > currentDate) {
 			this.ns.sendOutOfStockNotification(p.name);
-			await this.db.update(products).set(p).where(eq(products.id, p.id));
+			await this.save(p);
 		} else {
 			await this.notifyDelay(p.leadTime, p);
 		}
@@ -44,11 +48,11 @@ export class ProductService {
 		// Check if product is in stock and not expired
 		if (p.available > 0 && p.expiryDate! > currentDate) {
 			p.available -= 1;
-			await this.db.update(products).set(p).where(eq(products.id, p.id));
+			await this.save(p);
 		} else {
 			this.ns.sendExpirationNotification(p.name, p.expiryDate!);
 			p.available = 0;
-			await this.db.update(products).set(p).where(eq(products.id, p.id));
+			await this.save(p);
 		}
 	}
 }
