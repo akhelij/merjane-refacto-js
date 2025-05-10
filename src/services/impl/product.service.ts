@@ -13,7 +13,7 @@ export class ProductService {
 	public constructor({ns, db}: Pick<Cradle, 'ns' | 'db'>) {
 		this.ns = ns;
 		this.db = db;
-		this.strategyFactory = new ProductStrategyFactory(db, ns);
+		this.strategyFactory = new ProductStrategyFactory(ns);
 	}
 	
 	private async save(p: Product): Promise<void> {
@@ -26,18 +26,9 @@ export class ProductService {
 		this.ns.sendDelayNotification(leadTime, p.name);
 	}
 
-	public async handleProduct(p: Product): Promise<void> {
+	public async handleProductUpdate(p: Product): Promise<void> {
 		const strategy = this.strategyFactory.getStrategy(p);
 		await strategy.handle(p);
-	}
-
-	public async handleSeasonalProduct(p: Product): Promise<void> {
-		const strategy = this.strategyFactory.getStrategy(p);
-		await strategy.handle(p);
-	}
-
-	public async handleExpiredProduct(p: Product): Promise<void> {
-		const strategy = this.strategyFactory.getStrategy(p);
-		await strategy.handle(p);
+		await this.save(p);
 	}
 }

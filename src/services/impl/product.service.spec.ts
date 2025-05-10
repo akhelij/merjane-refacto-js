@@ -74,7 +74,7 @@ describe('ProductService Tests', () => {
 			await databaseMock.insert(products).values(product);
 
 			// WHEN
-			await productService.handleSeasonalProduct(product);
+			await productService.handleProductUpdate(product);
 
 			// THEN
 			expect(notificationServiceMock.sendDelayNotification).toHaveBeenCalledWith(product.leadTime, product.name);
@@ -104,7 +104,7 @@ describe('ProductService Tests', () => {
 			await databaseMock.insert(products).values(product);
 
 			// WHEN
-			await productService.handleSeasonalProduct(product);
+			await productService.handleProductUpdate(product);
 
 			// THEN
 			expect(notificationServiceMock.sendOutOfStockNotification).toHaveBeenCalledWith(product.name);
@@ -135,7 +135,7 @@ describe('ProductService Tests', () => {
 			await databaseMock.insert(products).values(product);
 
 			// WHEN
-			await productService.handleSeasonalProduct(product);
+			await productService.handleProductUpdate(product);
 
 			// THEN
 			expect(notificationServiceMock.sendOutOfStockNotification).toHaveBeenCalledWith(product.name);
@@ -168,7 +168,7 @@ describe('ProductService Tests', () => {
 			await databaseMock.insert(products).values(product);
 
 			// WHEN
-			await productService.handleExpiredProduct(product);
+			await productService.handleProductUpdate(product);
 
 			// THEN
 			expect(product.available).toBe(9); // Should be decremented
@@ -196,7 +196,7 @@ describe('ProductService Tests', () => {
 			await databaseMock.insert(products).values(product);
 
 			// WHEN
-			await productService.handleExpiredProduct(product);
+			await productService.handleProductUpdate(product);
 
 			// THEN
 			expect(product.available).toBe(0); // Should be set to 0
@@ -224,7 +224,7 @@ describe('ProductService Tests', () => {
 			await databaseMock.insert(products).values(product);
 
 			// WHEN
-			await productService.handleExpiredProduct(product);
+			await productService.handleProductUpdate(product);
 
 			// THEN
 			expect(product.available).toBe(0); // Should remain 0
