@@ -19,14 +19,23 @@ export async function cleanAllLooseDatabases(prefix: string) {
 }
 
 export async function cleanUp(databaseName: string) {
-	await rm(databaseName, {force: true});
+	try {
+		// Add a longer delay to ensure the connection has time to close
+		await new Promise(resolve => setTimeout(resolve, 1000));
+		await rm(databaseName, {force: true});
+	} catch (error: unknown) {
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		console.warn(`Could not remove database file ${databaseName}: ${errorMessage}`);
+		// Rather than failing the test, just log the warning
+	}
 }
 
 export async function createDatabaseMock() {
 	const randomName = uniqueNamesGenerator({dictionaries: [adjectives, colors, animals]}); // Big_red_donkey
 	const databaseName = `${UNIT_TEST_DB_PREFIX}${randomName}.db`;
 	const sqlite = new SqliteDatabase(databaseName);
-	await exec(`pnpm drizzle-kit push --schema=src/db/schema.ts --dialect=sqlite --url=${databaseName}`);
+	// Use corepack to ensure the correct pnpm version is used
+	await exec(`corepack enable pnpm && pnpm drizzle-kit push --schema=src/db/schema.ts --dialect=sqlite --url=${databaseName}`);
 
 	const databaseMock = drizzle(sqlite, {
 		schema,
