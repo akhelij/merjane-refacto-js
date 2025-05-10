@@ -3,16 +3,17 @@ import {eq} from 'drizzle-orm';
 import {type INotificationService} from '../notifications.port.js';
 import {products, type Product} from '@/db/schema.js';
 import {type Database} from '@/db/type.js';
-
-const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
+import {ProductStrategyFactory} from '../strategies/product-strategy.factory.js';
 
 export class ProductService {
 	private readonly ns: INotificationService;
 	private readonly db: Database;
+	private readonly strategyFactory: ProductStrategyFactory;
 
 	public constructor({ns, db}: Pick<Cradle, 'ns' | 'db'>) {
 		this.ns = ns;
 		this.db = db;
+		this.strategyFactory = new ProductStrategyFactory(db, ns);
 	}
 	
 	private async save(p: Product): Promise<void> {
@@ -25,34 +26,18 @@ export class ProductService {
 		this.ns.sendDelayNotification(leadTime, p.name);
 	}
 
+	public async handleProduct(p: Product): Promise<void> {
+		const strategy = this.strategyFactory.getStrategy(p);
+		await strategy.handle(p);
+	}
+
 	public async handleSeasonalProduct(p: Product): Promise<void> {
-		const currentDate = new Date();
-		const projectedRestockDate = new Date(currentDate.getTime() + (p.leadTime * MILLISECONDS_PER_DAY));
-		
-		// Check if we get more items after the season is over
-		if (projectedRestockDate > p.seasonEndDate!) {
-			this.ns.sendOutOfStockNotification(p.name);
-			p.available = 0;
-			await this.save(p);
-		} else if (p.seasonStartDate! > currentDate) {
-			this.ns.sendOutOfStockNotification(p.name);
-			await this.save(p);
-		} else {
-			await this.notifyDelay(p.leadTime, p);
-		}
+		const strategy = this.strategyFactory.getStrategy(p);
+		await strategy.handle(p);
 	}
 
 	public async handleExpiredProduct(p: Product): Promise<void> {
-		const currentDate = new Date();
-
-		// Check if product is in stock and not expired
-		if (p.available > 0 && p.expiryDate! > currentDate) {
-			p.available -= 1;
-			await this.save(p);
-		} else {
-			this.ns.sendExpirationNotification(p.name, p.expiryDate!);
-			p.available = 0;
-			await this.save(p);
-		}
+		const strategy = this.strategyFactory.getStrategy(p);
+		await strategy.handle(p);
 	}
 }
